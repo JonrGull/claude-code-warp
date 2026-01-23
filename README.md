@@ -27,7 +27,9 @@ Notifications appear in Warp's notification center and as system notifications, 
 /plugin install warp@claude-code-warp
 ```
 
-That's it! Notifications will appear automatically when Claude completes tasks.
+> ⚠️ **Important**: After installing, **restart Claude Code** for notifications to activate.
+
+Once restarted, you'll see a confirmation message and notifications will appear automatically when Claude completes tasks.
 
 ## Requirements
 
@@ -43,7 +45,8 @@ This plugin uses Warp's [pluggable notifications](https://docs.warp.dev/features
 2. Formats a concise notification message
 3. Sends an OSC 777 escape sequence to Warp, which displays a native notification
 
-The plugin registers two hooks:
+The plugin registers three hooks:
+- **SessionStart** — shows a welcome message confirming the plugin is active
 - **Stop** — fires when Claude finishes responding
 - **Notification** — fires when Claude needs user input
 
