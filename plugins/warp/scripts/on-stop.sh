@@ -15,16 +15,18 @@ MSG="Task completed"
 
 # Try to extract prompt and response from the transcript (JSONL format)
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    # Get the first user prompt
+    # Get the first user prompt, strip XML/system tags
     PROMPT=$(jq -rs '
         [.[] | select(.type == "user")] | first | .message.content // empty
-    ' "$TRANSCRIPT_PATH" 2>/dev/null)
-    
-    # Get the last assistant response
+    ' "$TRANSCRIPT_PATH" 2>/dev/null \
+      | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//')
+
+    # Get the last assistant response, strip XML/system tags
     RESPONSE=$(jq -rs '
         [.[] | select(.type == "assistant" and .message.content)] | last |
         [.message.content[] | select(.type == "text") | .text] | join(" ")
-    ' "$TRANSCRIPT_PATH" 2>/dev/null)
+    ' "$TRANSCRIPT_PATH" 2>/dev/null \
+      | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//')
     
     if [ -n "$PROMPT" ] && [ -n "$RESPONSE" ]; then
         # Truncate prompt to 50 chars
