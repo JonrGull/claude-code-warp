@@ -19,8 +19,13 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
     PROMPT=$(jq -rs '
         [.[] | select(.type == "user")
           | .message.content
-          | if type == "string" then . else "" end
-          | select(test("<local-command-caveat>|<system-reminder>|<command-name>") | not)
+          | if type == "string" then .
+            elif type == "array" then
+              [.[] | if type == "string" then . elif .type == "text" then .text else "" end] | join(" ")
+            else "" end
+          | gsub("<[^>]*>"; "")
+          | gsub("^\\s+"; "")
+          | select(test("^Caveat:|^Note:|^$") | not)
           | select(length > 0)
         ] | last // empty
     ' "$TRANSCRIPT_PATH" 2>/dev/null)
