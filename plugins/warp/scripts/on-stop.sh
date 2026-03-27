@@ -15,18 +15,26 @@ MSG="Task completed"
 
 # Try to extract prompt and response from the transcript (JSONL format)
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    # Get the first user prompt, strip XML/system tags
+    # Get the last user prompt, filtering out system-generated messages
     PROMPT=$(jq -rs '
-        [.[] | select(.type == "user")] | first | .message.content // empty
-    ' "$TRANSCRIPT_PATH" 2>/dev/null \
-      | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//')
+        [.[] | select(.type == "user")
+          | .message.content
+          | if type == "string" then . else "" end
+          | select(test("<local-command-caveat>|<system-reminder>|<command-name>") | not)
+          | select(length > 0)
+        ] | last // empty
+    ' "$TRANSCRIPT_PATH" 2>/dev/null)
 
-    # Get the last assistant response, strip XML/system tags
+    # Get the last assistant response, filtering out system content
     RESPONSE=$(jq -rs '
         [.[] | select(.type == "assistant" and .message.content)] | last |
-        [.message.content[] | select(.type == "text") | .text] | join(" ")
-    ' "$TRANSCRIPT_PATH" 2>/dev/null \
-      | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//')
+        [.message.content[] | select(.type == "text") | .text
+          | gsub("<[^>]*>"; "")
+          | gsub("^\\s+"; "")
+          | select(test("^Caveat:|^Note:") | not)
+          | select(length > 0)
+        ] | join(" ")
+    ' "$TRANSCRIPT_PATH" 2>/dev/null)
     
     if [ -n "$PROMPT" ] && [ -n "$RESPONSE" ]; then
         # Truncate prompt to 50 chars
